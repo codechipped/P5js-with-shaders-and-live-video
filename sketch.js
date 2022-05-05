@@ -1,3 +1,5 @@
+// Edited template from: https://github.com/aferriss/p5jsShaderExamples
+
 let myShader;
 let noise;
 let spheres = []
@@ -6,6 +8,7 @@ let attempts = 0;
 let tX;
 let tY;
 let noiseYN = false;
+let rotation = false;
 let currCamera;
 let webCam;
 
@@ -15,43 +18,38 @@ function preload() {
 
 function setup() {
   // shaders require WEBGL mode to work
-  createCanvas(windowWidth, windowHeight, WEBGL);
+  canvas = createCanvas(windowWidth, windowHeight, WEBGL);
   webCam = createCapture(VIDEO);
   webCam.size(320, 240);
   webCam.hide();
-
-  currCamera = createCamera();
-  zPosSlider = createSlider(-20, 20, 0);
-  zPosSlider.position(20, 100);
-
-  // Set the angle mode in degrees
-  angleMode(DEGREES);
   
+  //camera controller
+  player = new Player();
+
+  frameRate(60);  
   //Create button to enable/disable noise
-  newNoiseBtn = createButton("Toggle Noise");
-  newNoiseBtn.position(210, 40);
-  newNoiseBtn.mouseClicked(toggleNoise);
+  // newNoiseBtn = createButton("Toggle Noise");
+  // newNoiseBtn.position(210, 40);
+  // newNoiseBtn.mouseClicked(toggleNoise);
 
-  // Create the buttons for panning the camera
-  newCameraBtn = createButton("Pan Left");
-  newCameraBtn.position(60, 40);
-  newCameraBtn.mouseClicked(panCameraLeft);
-  
-  newCameraBtn = createButton("Pan Right");
-  newCameraBtn.position(360, 40);
-  newCameraBtn.mouseClicked(panCameraRight);
+
   noStroke();
   tX = windowWidth;
   tY = windowWidth;
   // noLoop();
+
+  player.position = p5.Vector.add(0.0, 0.0, createVector(0, -15, 0))
 }
+
 
 function draw() {
   background(0);
-  // shader() sets the active shader with our shader
 
-  let currZ = zPosSlider.value();
-  currCamera.move(0, 0, currZ);
+  player.update();
+
+  // shader() sets the active shader with our shader
+  // let currZ = zPosSlider.value();
+  // currCamera.move(0, 0, currZ);
   shader(myShader);
 
   // Send the frameCount to the shader
@@ -59,10 +57,14 @@ function draw() {
   myShader.setUniform("uNoiseTexture", webCam);
   myShader.setUniform("clicked", noiseYN);
 
+
   // Rotate our geometry on the X and Y axes
-  // rotateX(mouseY * 0.1);
-  // rotateY(mouseX * 0.1);
-  // rotateZ(frameCount * 0.01);
+  if(rotation) {
+    rotateX(frameCount * 0.001);
+    rotateY(frameCount * 0.001);
+    rotateZ(frameCount * 0.001);
+  }
+
   
 
 
@@ -123,22 +125,84 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-function panCameraLeft() {
-  
-  // Pan the camera to the left
-  // that is, rotate counterclockwise
-  // using a value greater than 0
-  currCamera.pan(10);
-}
-  
-function panCameraRight() {
-  
-  // Pan the camera to the right
-  // that is, rotate clockwise
-  // using a value less than 0
-  currCamera.pan(-10);
+function keyPressed() {
+  if(key === 'n') {
+    // add noise when pressing n
+    noiseYN = !noiseYN;
+  } else if(key === 'r') {
+    // rotate scene when pressing r
+    rotation = !rotation;
+  }
 }
 
-function toggleNoise() {
-  noiseYN = !noiseYN;
+// this is needed to catch the exit from pointerLock when user presses ESCAPE
+function onPointerlockChange() {
+  if (document.pointerLockElement === canvas.elt ||
+    document.mozPointerLockElement === canvas.elt)
+    console.log("locked");
+  else {
+    console.log("unlocked");
+    player.pointerLock = false;
+  }
+}
+document.addEventListener('pointerlockchange', onPointerlockChange, false);
+
+var player, maze, f, help = false,
+  canvas;
+
+class Player extends RoverCam {
+  constructor() {
+    super();
+    this.dimensions = createVector(1, 3, 1);
+    this.velocity = createVector(0, 0, 0);
+    this.gravity = createVector(0, 0.03, 0);
+    this.grounded = false;
+    this.pointerLock = false;
+    this.sensitivity = 0.002;
+    this.speed = 2.5;
+  }
+  
+  controller() { // override
+    if (player.pointerLock) {
+      this.yaw(movedX * this.sensitivity);   // mouse left/right
+      this.pitch(movedY * this.sensitivity); // mouse up/down
+      if(keyIsDown(65) || keyIsDown(LEFT_ARROW))  this.moveY(0.01); // a
+      if(keyIsDown(68) || keyIsDown(RIGHT_ARROW)) this.moveY(-0.01);// d
+    }
+    else { // otherwise yaw/pitch with keys
+      if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) this.yaw(-0.10); // a
+      if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) this.yaw(0.10); // d
+      if (keyIsDown(82)) this.pitch(-0.02); // r
+      if (keyIsDown(70)) this.pitch(0.02);  // f
+    }
+
+    if (keyIsDown(87) || keyIsDown(UP_ARROW)) this.moveX(this.speed);    // w
+    if (keyIsDown(83) || keyIsDown(DOWN_ARROW)) this.moveX(-this.speed); // s
+    if (keyIsDown(69)) this.moveZ(0.05); // e
+  }
+  
+  update() {
+    if (keyIsPressed && key == 'e') {
+      this.grounded = false;
+      return;
+    }
+    this.velocity.add(this.gravity);
+    this.position.add(this.velocity);
+
+    if (this.grounded && keyIsPressed && keyCode == 32) { // space
+      this.grounded = false;
+      this.velocity.y = -1.5;
+      this.position.y -= 0.2;
+    }
+  }
+}
+
+function mouseClicked() {
+  if (!player.pointerLock) {
+    player.pointerLock = true;
+    requestPointerLock();
+  } else {
+    exitPointerLock();
+    player.pointerLock = false;
+  }
 }
