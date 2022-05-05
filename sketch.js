@@ -28,11 +28,6 @@ function setup() {
   player = new Player();
 
   frameRate(60);  
-  //Create button to enable/disable noise
-  // newNoiseBtn = createButton("Toggle Noise");
-  // newNoiseBtn.position(210, 40);
-  // newNoiseBtn.mouseClicked(toggleNoise);
-
 
   noStroke();
   tX = windowWidth;
@@ -46,11 +41,10 @@ function setup() {
 function draw() {
   background(0);
 
+  // part of the camera controller
   player.update();
 
-  // shader() sets the active shader with our shader
-  // let currZ = zPosSlider.value();
-  // currCamera.move(0, 0, currZ);
+  // set the shader
   shader(myShader);
 
   // Send the frameCount to the shader
@@ -68,7 +62,7 @@ function draw() {
 
   
 
-
+  // create the spheres
   let total = 100;
   let count = 0;
   
@@ -101,6 +95,7 @@ function draw() {
 
 }
 
+//function that will create a sphere as long as it doesn't collide with any current spheres
 newSphere = () => {
   let x = map(random(200), 0, 200, -tX, tX);
   let y = map(random(200), 0, 200, -tY, tY);
@@ -133,6 +128,10 @@ function keyPressed() {
   } else if(key === 'r') {
     // rotate scene when pressing r
     rotation = !rotation;
+  } else if(key === 'v') {
+    let date = new Date();
+    date.getu
+    save(date.getMonth() + "-" + date.getDay() + "-" +  date.getHours() + "-" + date.getMinutes() + "-" + date.getMilliseconds() + ".png");
   }
 }
 
