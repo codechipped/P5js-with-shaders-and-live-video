@@ -1,4 +1,5 @@
 // Edited template from: https://github.com/aferriss/p5jsShaderExamples
+// Edited camera controller from: https://editor.p5js.org/ffd8/sketches/8VZTZe-d8
 
 let myShader;
 let noise;
